@@ -1,9 +1,10 @@
 package com.example.demo.services;
 
+import java.sql.Date;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -102,6 +103,7 @@ public class PatientService {
 			res.put("Item_Unit", b.getItem_Unit());
 			res.put("cleared", b.isCleared());
 			res.put("id", b.getId());
+			res.put("total", b.getTotalAmount());
 			ls.add(res);
 		}
 		return ls;
@@ -111,14 +113,17 @@ public class PatientService {
 		List<HashMap<String, Object>> ls = new ArrayList<>();
 		for (MedicalHistory b : bt) {
 			HashMap<String, Object> res = new HashMap<>();
+			if(b.getBedBookings() != null)
 			res.put("BedBookingDetails", getBedBookingsDto(b.getBedBookings()));
 			res.put("medicines", b.getMedicines());
+			if(b.getDepartment()!=null)
 			res.put("departement", b.getDepartment().getName());
 			res.put("diagnosis", b.getDiagnosis());
 			res.put("date", b.getDate());
 			res.put("todate", b.getTodate());
 			res.put("doctor", b.getDoctor().getName());
 			res.put("report", b.getReports());
+			if(b.getTestBookings()!= null)
 			res.put("testDetails", getTestDetails(b.getTestBookings()));
 //			res.put("OperationDetails", getOtDetails(b.getOtbooking()));
 			ls.add(res);
@@ -184,20 +189,23 @@ public class PatientService {
 		}
 	}
 
-	public HashMap bookAppointment(AppointmentDto dto) {
+	public HashMap bookAppointment(AppointmentDto dto) throws ParseException {
 		Appointment a = new Appointment();
 
 		Optional<Patient> op = prepo.findById(dto.getPatientId());
 		Optional<Employee> oe = erepo.findById(dto.getDoctorId());
 		if (op.isPresent() && oe.isPresent()) {
 			a.setVisited(true);
-			a.setBookingdateTime(new Date());
-			a.setDate(new Date());
+			a.setBookingdateTime(new Date(new java.util.Date().getTime()));
+			a.setDate(new Date(new java.util.Date().getTime()));
 			a.setMedHistory(null);
 			a.setPatient(op.get());
 			a.setDoctor(oe.get());
+			Patient p = op.get();
 			a = arepo.save(a);
-			a.setMedHistory(createMedicalHistory(a));
+			MedicalHistory h = createMedicalHistory(a);
+			p.getMhis().add(h);
+			prepo.save(p);
 			HashMap<String, Integer> item_unit = new HashMap<>();
 			item_unit.put("appointment", 1);
 			HashMap<String, Integer> item_price = new HashMap<>();
@@ -209,7 +217,7 @@ public class PatientService {
 
 	}
 
-	private MedicalHistory createMedicalHistory(Appointment a) {
+	private MedicalHistory createMedicalHistory(Appointment a) throws ParseException {
 		MedicalHistory m = new MedicalHistory();
 		m.setAdmitted(false);
 		m.setBedBookings(null);
@@ -218,7 +226,7 @@ public class PatientService {
 		m.setOperationSuggested(false);
 		m.setPatient(a.getPatient());
 		m.setDoctor(a.getDoctor());
-		m.setTodate(new Date());
+		m.setTodate(new Date(new java.util.Date().getTime()));
 		mrepo.save(m);
 		return m;
 	}
@@ -241,7 +249,7 @@ public class PatientService {
 			t.setTests(ls);
 			t.setSampleType(dto.getSampleType());
 			t.setTest(createTest(t));
-			t.setDate(new Date());
+			t.setDate(new Date(new java.util.Date().getTime()));
 			HashMap<String, Integer> item_unit = new HashMap<String, Integer>();
 			item_unit.put("testBooking", 1);
 			HashMap<String, Integer> item_amount = new HashMap<String, Integer>();
@@ -257,7 +265,7 @@ public class PatientService {
 		Test t = new Test();
 		t.setBookingDetails(tb);
 		t.setResult("");
-		t.setResultDate(new Date());
+		t.setResultDate(new Date(new java.util.Date().getTime()));
 		t.setTestStatus(TestStatus.ARRIVED);
 		t = trepo.save(t);
 		return t;
@@ -266,7 +274,8 @@ public class PatientService {
 	public boolean admitPatient(AdmitPatientDto dto) {
 		Optional<Patient> op = prepo.findById(dto.getPatientId());
 		if (op.isPresent()) {
-			Optional<MedicalHistory> om = mrepo.findByPatientAndTodate(op.get(), new Date());
+			
+			Optional<MedicalHistory> om = mrepo.findByPatientAndTodate(op.get(), new Date(new java.util.Date().getTime()));
 			if (om.isPresent()) {
 				MedicalHistory m = om.get();
 				Patient p = op.get();
@@ -278,7 +287,7 @@ public class PatientService {
 				if (bb != null) {
 					bls.add(bb);
 					m.setBedBookings(bls);
-					m.setTodate(new Date());
+					m.setTodate(new Date(new java.util.Date().getTime()));
 					m = mrepo.save(m);
 					return true;
 				}
@@ -292,7 +301,7 @@ public class PatientService {
 		if (bed != null) {
 			BedBooking b = new BedBooking();
 			b.setAttendedBy(doctor);
-			b.setDate(new Date());
+			b.setDate(new Date(new java.util.Date().getTime()));
 			b.setMedHistory(m);
 			b.setPatient(p);
 			b.setBed(bed.get(0));
@@ -313,7 +322,7 @@ public class PatientService {
 	private void createBill(Employee e , HashMap<String, Integer> item_unit, HashMap<String, Integer> item_price, Patient p) {
 		Bill b = new Bill();
 		b.setBilledBy(e);
-		b.setDate(new Date());
+		b.setDate(new Date(new java.util.Date().getTime()));
 		b.setPatient(p);
 		b.setItem_Price(item_price);
 		b.setItem_Unit(item_unit);
@@ -342,7 +351,7 @@ public class PatientService {
 			List<MedicalHistory> ml = p.getMhis();
 			MedicalHistory req = null;
 			for (MedicalHistory m : ml) {
-				if (m.getTodate().compareTo(new Date()) == -1) {
+				if (m.getTodate().compareTo(new Date(new java.util.Date().getTime())) == -1) {
 					req = m;
 				}
 			}
@@ -363,7 +372,7 @@ public class PatientService {
 				if (bb != null) {
 					bls.add(bb);
 					req.setBedBookings(bls);
-					req.setTodate(new Date());
+					req.setTodate(new Date(new java.util.Date().getTime()));
 					req = mrepo.save(req);
 				}
 			}
@@ -381,7 +390,7 @@ public class PatientService {
 			} else {
 				p.setAdmitted(false);
 				p.setCurrentStatus(PatientStatus.DISCHARGED);
-				Optional<MedicalHistory> om = mrepo.findByPatientAndTodate(p, new Date());
+				Optional<MedicalHistory> om = mrepo.findByPatientAndTodate(p, new Date(new java.util.Date().getTime()));
 				MedicalHistory m = om.get();
 				List<BedBooking> bb = m.getBedBookings();
 				Bed bed = bb.get(0).getBed();

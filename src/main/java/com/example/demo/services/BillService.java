@@ -1,7 +1,7 @@
 package com.example.demo.services;
 
+import java.sql.Date;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -111,7 +111,7 @@ public class BillService {
 	private void createBill(HashMap<String, Integer> item_unit, HashMap<String, Integer> item_price, Patient p) {
 		Bill b = new Bill();
 		b.setBilledBy(null);
-		b.setDate(new Date());
+		b.setDate(new Date(new java.util.Date().getTime()));
 		b.setPatient(p);
 		b.setItem_Price(item_price);
 		b.setItem_Unit(item_unit);

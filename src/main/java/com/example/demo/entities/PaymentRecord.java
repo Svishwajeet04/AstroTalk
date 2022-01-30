@@ -1,5 +1,7 @@
 package com.example.demo.entities;
 
+import java.sql.Date;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -17,5 +19,7 @@ public class PaymentRecord {
 	private Patient p;
 
 	private int amount;
+	
+	private Date date;
 
 }

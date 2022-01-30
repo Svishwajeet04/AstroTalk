@@ -33,7 +33,7 @@ public class Hospital {
 	@OneToMany(targetEntity = Bed.class)
 	private List<Bed> beds;
 
-	@OneToOne(targetEntity = Employee.class)
-	private Employee Dean;
+//	@OneToOne(targetEntity = Employee.class)
+//	private Employee Dean;
 
 }

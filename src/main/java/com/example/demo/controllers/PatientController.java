@@ -1,5 +1,6 @@
 package com.example.demo.controllers;
 
+import java.text.ParseException;
 import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class PatientController {
 	}
 
 	@PostMapping("/bookAppointment")
-	public ResponseEntity<Object> bookAppointment(@RequestHeader("Authorization")String auth ,@RequestBody AppointmentDto dto) {
+	public ResponseEntity<Object> bookAppointment(@RequestHeader("Authorization")String auth ,@RequestBody AppointmentDto dto) throws ParseException {
 
 		return ResponseEntity.ok(pservice.bookAppointment(dto));
 	}
