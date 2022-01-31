@@ -8,4 +8,6 @@ public class ClearBillDto {
 	private int pid;
 
 	private int amount;
+
+	private int eid;
 }

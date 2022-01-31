@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.dtos.ClearBillDto;
 import com.example.demo.entities.Bill;
+import com.example.demo.entities.Employee;
 import com.example.demo.entities.Patient;
 import com.example.demo.repositories.BillRepo;
+import com.example.demo.repositories.EmployeeRepo;
 import com.example.demo.repositories.PatientRepo;
 
 @Service
@@ -23,6 +25,9 @@ public class BillService {
 
 	@Autowired
 	BillRepo brepo;
+
+	@Autowired
+	EmployeeRepo erepo;
 
 	public HashMap<String, Object> viewPendingBills(int id) {
 		HashMap<String, Object> res = null;
@@ -90,27 +95,33 @@ public class BillService {
 		Optional<Patient> pt = prepo.findById(dto.getPid());
 		if (pt.isPresent()) {
 			Patient p = pt.get();
-			p.setTotalAmountPending(p.getTotalAmountPending() - dto.getAmount());
+			int initial = getTotalAmountPending(p.getId());
+			int remain = initial - dto.getAmount();
 			List<Bill> bills = p.getBills();
 			for (Bill b : bills) {
 				b.setCleared(true);
+				brepo.save(b);
 			}
-			if (p.getTotalAmountPending() > 0) {
+			p.setBills(bills);
+			prepo.save(p);
+			if (remain > 0) {
 				HashMap<String, Integer> item_unit = new HashMap<>();
 				item_unit.put("residue bill", 1);
 				HashMap<String, Integer> item_price = new HashMap<>();
-				item_unit.put("residue bill", p.getTotalAmountPending());
-				createBill(item_unit, item_price, p);
-				return "amount pending " + p.getTotalAmountPending();
+				item_price.put("residue bill", remain);
+				createBill(dto.getEid(), item_unit, item_price, p);
+				return "amount pending " + (remain);
 			}
 			return "bill cleared successfully";
 		}
 		return "no such patient";
 	}
 
-	private void createBill(HashMap<String, Integer> item_unit, HashMap<String, Integer> item_price, Patient p) {
+	private void createBill(int eid, HashMap<String, Integer> item_unit, HashMap<String, Integer> item_price,
+			Patient p) {
+		Employee e = erepo.findById(eid).get();
 		Bill b = new Bill();
-		b.setBilledBy(null);
+		b.setBilledBy(e);
 		b.setDate(new Date(new java.util.Date().getTime()));
 		b.setPatient(p);
 		b.setItem_Price(item_price);
@@ -131,14 +142,23 @@ public class BillService {
 		p.setBills(bls);
 		p = prepo.save(p);
 		brepo.save(b);
+		
 	}
 
-	public String viewTotalAmountPending(int id) {
-		Optional<Patient> pt = prepo.findById(id);
-		if (pt.isPresent()) {
-			Patient p = pt.get();
-			return String.valueOf(p.getTotalAmountPending());
+	public int getTotalAmountPending(int id) {
+		Optional<Patient> op = prepo.findById(id);
+
+		if (op.isPresent()) {
+			Patient p = op.get();
+			List<Bill> lb = p.getBills();
+			int total = 0;
+			for (Bill b : lb) {
+				if (!b.isCleared()) {
+					total += b.getTotalAmount();
+				}
+			}
+			return total;
 		}
-		return "No such patient";
+		return -1;
 	}
 }

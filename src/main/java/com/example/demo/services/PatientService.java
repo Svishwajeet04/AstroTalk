@@ -113,18 +113,18 @@ public class PatientService {
 		List<HashMap<String, Object>> ls = new ArrayList<>();
 		for (MedicalHistory b : bt) {
 			HashMap<String, Object> res = new HashMap<>();
-			if(b.getBedBookings() != null)
-			res.put("BedBookingDetails", getBedBookingsDto(b.getBedBookings()));
+			if (b.getBedBookings() != null)
+				res.put("BedBookingDetails", getBedBookingsDto(b.getBedBookings()));
 			res.put("medicines", b.getMedicines());
-			if(b.getDepartment()!=null)
-			res.put("departement", b.getDepartment().getName());
+			if (b.getDepartment() != null)
+				res.put("departement", b.getDepartment().getName());
 			res.put("diagnosis", b.getDiagnosis());
 			res.put("date", b.getDate());
 			res.put("todate", b.getTodate());
 			res.put("doctor", b.getDoctor().getName());
 			res.put("report", b.getReports());
-			if(b.getTestBookings()!= null)
-			res.put("testDetails", getTestDetails(b.getTestBookings()));
+			if (b.getTestBookings() != null)
+				res.put("testDetails", getTestDetails(b.getTestBookings()));
 //			res.put("OperationDetails", getOtDetails(b.getOtbooking()));
 			ls.add(res);
 		}
@@ -190,30 +190,39 @@ public class PatientService {
 	}
 
 	public HashMap bookAppointment(AppointmentDto dto) throws ParseException {
+		HashMap<String, Object> res = new HashMap<String, Object>();
 		Appointment a = new Appointment();
-
 		Optional<Patient> op = prepo.findById(dto.getPatientId());
 		Optional<Employee> oe = erepo.findById(dto.getDoctorId());
 		if (op.isPresent() && oe.isPresent()) {
-			a.setVisited(true);
-			a.setBookingdateTime(new Date(new java.util.Date().getTime()));
-			a.setDate(new Date(new java.util.Date().getTime()));
-			a.setMedHistory(null);
-			a.setPatient(op.get());
-			a.setDoctor(oe.get());
-			Patient p = op.get();
-			a = arepo.save(a);
-			MedicalHistory h = createMedicalHistory(a);
-			p.getMhis().add(h);
-			prepo.save(p);
-			HashMap<String, Integer> item_unit = new HashMap<>();
-			item_unit.put("appointment", 1);
-			HashMap<String, Integer> item_price = new HashMap<>();
-			item_price.put("appointment", oe.get().getConsultantFee());
-			createBill(oe.get(), item_unit, item_price, op.get());
-			return getPatientData(a.getPatient().getId());
+			Optional<Appointment> app = arepo.findByPatientAndDate(op.get(), new Date(new java.util.Date().getTime()));
+			if (app.isEmpty()) {
+				a.setVisited(true);
+				a.setBookingdateTime(new Date(new java.util.Date().getTime()));
+				a.setDate(new Date(new java.util.Date().getTime()));
+				a.setMedHistory(null);
+				a.setPatient(op.get());
+				a.setDoctor(oe.get());
+				Patient p = op.get();
+				a = arepo.save(a);
+				MedicalHistory h = createMedicalHistory(a);
+				a.setMedHistory(h);
+				arepo.save(a);
+				p.getMhis().add(h);
+				prepo.save(p);
+				HashMap<String, Integer> item_unit = new HashMap<>();
+				item_unit.put("appointment", 1);
+				HashMap<String, Integer> item_price = new HashMap<>();
+				item_price.put("appointment", oe.get().getConsultantFee());
+				createBill(oe.get(), item_unit, item_price, op.get());
+				return getPatientData(a.getPatient().getId());
+			} else {
+				res.put("result", "appointment for todays date for this patient already exists");
+				return res;
+			}
 		}
-		return null;
+		res.put("result", "no such patient or doctor");
+		return res;
 
 	}
 
@@ -254,7 +263,7 @@ public class PatientService {
 			item_unit.put("testBooking", 1);
 			HashMap<String, Integer> item_amount = new HashMap<String, Integer>();
 			item_unit.put("testBooking", amount);
-			createBill( oe.get() ,item_unit, item_amount, op.get());
+			createBill(oe.get(), item_unit, item_amount, op.get());
 			t = tbrepo.save(t);
 			return String.valueOf(t.getId());
 		}
@@ -271,34 +280,45 @@ public class PatientService {
 		return t;
 	}
 
-	public boolean admitPatient(AdmitPatientDto dto) {
+	public HashMap admitPatient(AdmitPatientDto dto) {
+		HashMap<String, Object> res = new HashMap<String, Object>();
 		Optional<Patient> op = prepo.findById(dto.getPatientId());
 		if (op.isPresent()) {
-			
-			Optional<MedicalHistory> om = mrepo.findByPatientAndTodate(op.get(), new Date(new java.util.Date().getTime()));
-			if (om.isPresent()) {
-				MedicalHistory m = om.get();
-				Patient p = op.get();
-				m.setAdmitted(true);
-				p.setAdmitted(true);
-				p.setCurrentStatus(PatientStatus.ADMITTED);
-				List<BedBooking> bls = m.getBedBookings();
-				BedBooking bb = createBedBooking(dto.getBedType(), p, m, m.getDoctor());
-				if (bb != null) {
-					bls.add(bb);
-					m.setBedBookings(bls);
-					m.setTodate(new Date(new java.util.Date().getTime()));
-					m = mrepo.save(m);
-					return true;
+			if (!op.get().isAdmitted()) {
+				Optional<MedicalHistory> om = mrepo.findByPatientAndTodate(op.get(),
+						new Date(new java.util.Date().getTime()));
+				if (om.isPresent()) {
+					MedicalHistory m = om.get();
+					Patient p = op.get();
+					m.setAdmitted(true);
+					p.setAdmitted(true);
+					p.setCurrentStatus(PatientStatus.ADMITTED);
+					List<BedBooking> bls = m.getBedBookings();
+					BedBooking bb = createBedBooking(dto.getBedType(), p, m, m.getDoctor());
+					if (bb != null) {
+						bls.add(bb);
+						m.setBedBookings(bls);
+						m.setTodate(new Date(new java.util.Date().getTime()));
+						m = mrepo.save(m);
+						res.put("result", "patient admitted");
+					} else {
+						res.put("result", "bed not available");
+					}
+				} else {
+					res.put("result", "get an appointment first");
 				}
+			} else {
+				res.put("result", "patient already admitted");
 			}
+		} else {
+			res.put("result", "no such patient or doctor");
 		}
-		return false;
+		return res;
 	}
 
 	private BedBooking createBedBooking(BedType bedType, Patient p, MedicalHistory m, Employee doctor) {
 		List<Bed> bed = bedRepo.findAllByBedTypeAndStatus(bedType, false);
-		if (bed != null) {
+		if (bed.size() != 0) {
 			BedBooking b = new BedBooking();
 			b.setAttendedBy(doctor);
 			b.setDate(new Date(new java.util.Date().getTime()));
@@ -312,14 +332,15 @@ public class PatientService {
 			HashMap<String, Integer> item_unit = new HashMap<>();
 			item_unit.put("bed - " + bedType.toString(), 1);
 			HashMap<String, Integer> item_price = new HashMap<>();
-			item_unit.put("bed - " + bedType.toString(), bedType.getPrice());
-			createBill(doctor , item_unit, item_price, p);
+			item_price.put("bed - " + bedType.toString(), bedType.getPrice());
+			createBill(doctor, item_unit, item_price, p);
 			return b;
 		}
 		return null;
 	}
 
-	private void createBill(Employee e , HashMap<String, Integer> item_unit, HashMap<String, Integer> item_price, Patient p) {
+	private void createBill(Employee e, HashMap<String, Integer> item_unit, HashMap<String, Integer> item_price,
+			Patient p) {
 		Bill b = new Bill();
 		b.setBilledBy(e);
 		b.setDate(new Date(new java.util.Date().getTime()));
@@ -340,7 +361,7 @@ public class PatientService {
 		List<Bill> bls = p.getBills();
 		bls.add(b);
 		p.setBills(bls);
-		p.setTotalAmountPending(total + p.getTotalAmountPending());
+//		p.setTotalAmountPending(total + p.getTotalAmountPending());
 		p = prepo.save(p);
 		brepo.save(b);
 	}
@@ -380,11 +401,28 @@ public class PatientService {
 		return "done successfully ";
 	}
 
+	public int getTotalPending(int id) {
+		Optional<Patient> op = prepo.findById(id);
+
+		if (op.isPresent()) {
+			Patient p = op.get();
+			List<Bill> lb = p.getBills();
+			int total = 0;
+			for (Bill b : lb) {
+				if (!b.isCleared()) {
+					total += b.getTotalAmount();
+				}
+			}
+			return total;
+		}
+		return -1;
+	}
+
 	public String dischargePatient(int id) {
 		Optional<Patient> op = prepo.findById(id);
 		if (op.isPresent() && op.get().isAdmitted()) {
 			Patient p = op.get();
-			int total = p.getTotalAmountPending();
+			int total = getTotalPending(p.getId());
 			if (total > 0) {
 				return "cannot discharge patient , pending bill of amount " + total;
 			} else {

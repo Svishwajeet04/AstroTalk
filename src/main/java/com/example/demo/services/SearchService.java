@@ -34,7 +34,6 @@ public class SearchService {
 			res.put("name", p.getName());
 			res.put("age", p.getAge());
 			res.put("phone", p.getPhone());
-			res.put("total amount pending", p.getTotalAmountPending());
 			res.put("admitted ", p.getCurrentStatus());
 			ls.add(res);
 		}

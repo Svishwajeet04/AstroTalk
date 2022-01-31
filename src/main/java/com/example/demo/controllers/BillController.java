@@ -21,23 +21,25 @@ public class BillController {
 	BillService bservice;
 
 	@GetMapping("/viewTotalAmountPending")
-	public ResponseEntity<Object> viewTotalAmountPending(@RequestHeader("Authorization")String auth ,@RequestParam int id) {
-		return ResponseEntity.ok(bservice.viewTotalAmountPending(id));
+	public ResponseEntity<Object> viewTotalAmountPending(@RequestHeader("Authorization") String auth,
+			@RequestParam int id) {
+		return ResponseEntity.ok(bservice.getTotalAmountPending(id));
 	}
 
 	@PostMapping("/clearBill")
-	public ResponseEntity<Object> clearBill(@RequestHeader("Authorization")String auth ,@RequestBody ClearBillDto dto) {
+	public ResponseEntity<Object> clearBill(@RequestHeader("Authorization") String auth,
+			@RequestBody ClearBillDto dto) {
 		return ResponseEntity.ok(bservice.clearBill(dto));
 	}
 
 	@GetMapping("/viewAllBill")
-	public ResponseEntity<Object> viewBill(@RequestHeader("Authorization")String auth ,@RequestParam int p) {
+	public ResponseEntity<Object> viewBill(@RequestHeader("Authorization") String auth, @RequestParam int p) {
 
 		return ResponseEntity.ok(bservice.viewAllBills(p));
 	}
 
 	@GetMapping("/viewPendingBill")
-	public ResponseEntity<Object> viewPendingBill(@RequestHeader("Authorization")String auth ,@RequestParam int p) {
+	public ResponseEntity<Object> viewPendingBill(@RequestHeader("Authorization") String auth, @RequestParam int p) {
 		return ResponseEntity.ok(bservice.viewPendingBills(p));
 	}
 

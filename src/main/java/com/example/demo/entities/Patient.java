@@ -37,6 +37,6 @@ public class Patient {
 
 	private boolean admitted;
 
-	private int totalAmountPending;
+//	private int totalAmountPending;
 
 }
