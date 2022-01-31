@@ -10,7 +10,7 @@ to see database run this url :
 http://localhost:9090/h2-console/
 
 to see various rest endpoints , run this 
-http://localhost:9090/swagger-ui/index.html?
+http://localhost:9090/swagger-ui.html
 
 
 for all the data you need to send using postman to check its working refer to swagger ui.
