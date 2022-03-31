@@ -35,6 +35,9 @@ public class BillService {
 		if (pt.isPresent()) {
 			res = new HashMap<>();
 			Patient p = pt.get();
+
+
+
 			res.put("name", p.getName());
 			res.put("age", p.getAge());
 			res.put("Pending bills", getPendingBillDto(p.getBills()));
