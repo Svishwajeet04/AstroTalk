@@ -3,15 +3,10 @@ package com.example.demo.controllers;
 import java.text.ParseException;
 import java.util.HashMap;
 
+import com.example.demo.entities.Patient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.dtos.AdmitPatientDto;
 import com.example.demo.dtos.AppointmentDto;
@@ -47,6 +42,11 @@ public class PatientController {
 	@PostMapping("/bookTest")
 	public ResponseEntity<Object> bookTest(@RequestHeader("Authorization")String auth ,@RequestBody TestBookingDto dto) {
 		return ResponseEntity.ok(pservice.bookTest(dto));
+	}
+
+	@PutMapping("/update")
+	public String updatePatient(@RequestBody Patient p){
+		return pservice.updatePatient(p);
 	}
 //
 //	@PostMapping("/bookOperation")

@@ -171,8 +171,7 @@ public class PatientService {
 	public HashMap addPatientData(PatientDto dto) {
 		Optional<Patient> op = prepo.findByPhone(dto.getPhone());
 		HashMap<String, Object> res = new HashMap<>();
-		if (op.isEmpty()) {
-
+		if (!op.isPresent()) {
 			Patient p = new Patient();
 			p.setAdmitted(false);
 			p.setCurrentStatus(PatientStatus.DISCHARGED);
@@ -196,7 +195,7 @@ public class PatientService {
 		Optional<Employee> oe = erepo.findById(dto.getDoctorId());
 		if (op.isPresent() && oe.isPresent()) {
 			Optional<Appointment> app = arepo.findByPatientAndDate(op.get(), new Date(new java.util.Date().getTime()));
-			if (app.isEmpty()) {
+			if (!app.isPresent()) {
 				a.setVisited(true);
 				a.setBookingdateTime(new Date(new java.util.Date().getTime()));
 				a.setDate(new Date(new java.util.Date().getTime()));
@@ -439,5 +438,20 @@ public class PatientService {
 			}
 		}
 		return "no such patient";
+	}
+
+	public String updatePatient(Patient p) {
+		Optional<Patient> op = prepo.findById(p.getId());
+		if(op.isPresent()){
+			Patient existing = op.get();
+			if(p.getAge() != null){
+				existing.setAge(p.getAge());
+			}
+			if(p.getName() != null){
+				existing.setName(p.getName());
+			}
+			prepo.save(existing);
+		}
+		return "successfully updated";
 	}
 }
